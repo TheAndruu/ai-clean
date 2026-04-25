@@ -46,7 +46,9 @@ GOOS=windows GOARCH=amd64 go build -o dist/ai-clean-windows-amd64.exe .
 
 ## Releases
 
-Distribution is via GoReleaser (`.goreleaser.yml`) and a GitHub Actions workflow triggered on `v*` tags. To cut a release: `git tag v0.X.0 && git push --tags`. CI builds and uploads binaries for darwin/linux/windows × amd64/arm64.
+Distribution is via GoReleaser (`.goreleaser.yml`) and a GitHub Actions workflow (`.github/workflows/release.yml`) triggered on `v*` tags. To cut a release: `git tag v0.X.0 && git push --tags`. CI builds and uploads binaries for darwin/linux/windows × amd64/arm64 (windows/arm64 is skipped) and pushes an updated formula to the `TheAndruu/homebrew-tap` repo (`master` branch, `Formula/` directory) so `brew install TheAndruu/tap/ai-clean` picks up the new version. The Homebrew push needs the `HOMEBREW_TAP_GITHUB_TOKEN` secret; binary uploads use the default `GITHUB_TOKEN`. `release.replace_existing_artifacts: true` lets a tag be re-released without manual cleanup.
+
+Recommended install path on macOS is the Homebrew tap (avoids the Gatekeeper warning on the unsigned binary). The README still documents `curl`/PowerShell one-liners and `go install` as alternatives.
 
 ## Where things live
 
