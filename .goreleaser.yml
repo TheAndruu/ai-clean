@@ -37,6 +37,9 @@ archives:
       - README.md
       - LICENSE
 
+release:
+  replace_existing_artifacts: true
+
 checksum:
   name_template: "checksums.txt"
 
