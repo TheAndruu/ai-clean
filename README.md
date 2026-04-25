@@ -29,15 +29,21 @@ Code-block indentation is preserved; prose is rejoined; borders and trailing whi
 
 ## Install
 
-### macOS / Linux — Homebrew (recommended)
+### macOS — Homebrew (recommended)
 
 ```sh
 brew install TheAndruu/tap/ai-clean
 ```
+Also works on Linux if you have Homebrew installed.
 
-This skips the macOS Gatekeeper warning you get when downloading the unsigned binary directly through a browser.
+To upgrade later:
 
-### macOS / Linux — prebuilt binary
+```sh
+brew update
+brew upgrade ai-clean
+```
+
+### One-line installers (macOS / Linux / Windows)
 
 Copy and paste the command for your platform.
 
@@ -65,11 +71,9 @@ curl -fsSL https://github.com/TheAndruu/ai-clean/releases/latest/download/ai-cle
 curl -fsSL https://github.com/TheAndruu/ai-clean/releases/latest/download/ai-clean_linux_arm64.tar.gz | sudo tar -xz -C /usr/local/bin ai-clean
 ```
 
-Each command extracts only the `ai-clean` binary into `/usr/local/bin`. Verify with `ai-clean --version`.
+Each `curl` command above extracts only the `ai-clean` binary into `/usr/local/bin`. Verify with `ai-clean --version`. To upgrade, re-run the same command.
 
-### Windows
-
-Run in PowerShell:
+**Windows — PowerShell**
 
 ```powershell
 $dest = "$env:LOCALAPPDATA\Programs\ai-clean"
@@ -80,7 +84,7 @@ Expand-Archive -Force $tmp -DestinationPath $dest
 [Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path", "User") + ";$dest", "User")
 ```
 
-Open a new PowerShell window for the updated `PATH` to take effect, then verify with `ai-clean --version`.
+Open a new PowerShell window for the updated `PATH` to take effect, then verify with `ai-clean --version`. To upgrade, re-run the same command.
 
 ### From source
 
