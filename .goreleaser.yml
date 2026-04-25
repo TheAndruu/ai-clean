@@ -59,7 +59,7 @@ brews:
     repository:
       owner: TheAndruu
       name: homebrew-tap
-      branch: main
+      branch: master
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     directory: Formula
     commit_author:
