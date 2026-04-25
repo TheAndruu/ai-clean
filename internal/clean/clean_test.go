@@ -1,11 +1,14 @@
 package clean
 
 import (
+	"flag"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+var update = flag.Bool("update", false, "rewrite testdata expected files from current Clean() output")
 
 func TestClean(t *testing.T) {
 	cases := []struct {
@@ -165,10 +168,10 @@ func TestClean(t *testing.T) {
 }
 
 func TestCleanFromTestdata(t *testing.T) {
-	dir := "../../testdata"
+	dir := "../../testdata/examples"
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		t.Skipf("testdata dir not present: %v", err)
+		t.Skipf("testdata/examples dir not present: %v", err)
 		return
 	}
 	for _, e := range entries {
@@ -183,13 +186,29 @@ func TestCleanFromTestdata(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			got := Clean(string(in), Opts{})
 			want, err := os.ReadFile(expectedPath)
 			if err != nil {
-				t.Skipf("no expected file %q", expectedPath)
-				return
+				if os.IsNotExist(err) && *update {
+					if werr := os.WriteFile(expectedPath, []byte(got), 0644); werr != nil {
+						t.Fatalf("write expected: %v", werr)
+					}
+					t.Logf("wrote %s", expectedPath)
+					return
+				}
+				if os.IsNotExist(err) {
+					t.Fatalf("missing expected file %q — run `go test ./internal/clean -update` to generate it", expectedPath)
+				}
+				t.Fatal(err)
 			}
-			got := Clean(string(in), Opts{})
 			if got != string(want) {
+				if *update {
+					if werr := os.WriteFile(expectedPath, []byte(got), 0644); werr != nil {
+						t.Fatalf("rewrite expected: %v", werr)
+					}
+					t.Logf("rewrote %s", expectedPath)
+					return
+				}
 				t.Errorf("mismatch on %s\n--- want ---\n%s\n--- got ---\n%s", base, string(want), got)
 			}
 		})

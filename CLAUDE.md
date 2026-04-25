@@ -44,6 +44,19 @@ GOOS=darwin  GOARCH=arm64 go build -o dist/ai-clean-darwin-arm64 .
 GOOS=windows GOARCH=amd64 go build -o dist/ai-clean-windows-amd64.exe .
 ```
 
+## Adding example test cases
+
+End-to-end fixtures live in `testdata/examples/` as `<characteristic>_sample.txt` / `<characteristic>_expected.txt` pairs. Naming describes what the case exercises (e.g. `wrapped_padded_indented`, `full_border_padded`), not which tool produced the output — the cleanup heuristics are source-agnostic.
+
+Workflow for adding a new example:
+
+1. Save the raw captured output as `testdata/examples/<name>_sample.txt`.
+2. Run `go test ./internal/clean -run TestCleanFromTestdata -update` to generate a candidate `<name>_expected.txt` from the current `Clean()` output.
+3. Review with `git diff testdata/examples/`. If the output is correct, commit both files.
+4. If the output is wrong, the case has revealed a rule gap. Edit the relevant `internal/clean/*.go` file, re-run with `-update`, review the diff again. Repeat until the expected output is right, then commit.
+
+Without `-update`, a missing or mismatched expected file fails the test — intentional, so silent drift can't sneak in.
+
 ## Releases
 
 Distribution is via GoReleaser (`.goreleaser.yml`) and a GitHub Actions workflow (`.github/workflows/release.yml`) triggered on `v*` tags. To cut a release: `git tag v0.X.0 && git push --tags`. CI builds and uploads binaries for darwin/linux/windows × amd64/arm64 (windows/arm64 is skipped) and pushes an updated formula to the `TheAndruu/homebrew-tap` repo (`master` branch, `Formula/` directory) so `brew install TheAndruu/tap/ai-clean` picks up the new version. The Homebrew push needs the `HOMEBREW_TAP_GITHUB_TOKEN` secret; binary uploads use the default `GITHUB_TOKEN`. `release.replace_existing_artifacts: true` lets a tag be re-released without manual cleanup.
@@ -61,5 +74,5 @@ Recommended install path on macOS is the Homebrew tap (avoids the Gatekeeper war
 | `internal/clean/trailing.go` | Trailing border-char strip + trailing whitespace trim (looped) |
 | `internal/clean/rejoin.go` | Wrapped-line rejoin heuristic |
 | `internal/clean/clean_test.go` | Table-driven tests + testdata-driven full-pipeline tests |
-| `testdata/*_sample.txt` | Real captured input |
-| `testdata/*_expected.txt` | Hand-curated expected output for the matching sample |
+| `testdata/examples/*_sample.txt` | Real captured input for full-pipeline regression cases |
+| `testdata/examples/*_expected.txt` | Expected output for the matching sample (regenerable via `go test -update`) |
