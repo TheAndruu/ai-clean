@@ -26,7 +26,7 @@ builds:
       - -s -w -X main.version={{ .Version }}
 
 archives:
-  - name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+  - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
     formats:
       - tar.gz
     format_overrides:

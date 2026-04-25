@@ -29,9 +29,50 @@ Code-block indentation is preserved; prose is rejoined; borders and trailing whi
 
 ## Install
 
-### macOS / Linux / Windows — prebuilt binary
+### macOS / Linux — prebuilt binary
 
-Download the latest release from the [Releases page](https://github.com/TheAndruu/ai-clean/releases) and put `ai-clean` somewhere on your `$PATH`.
+Copy and paste the command for your platform. 
+
+**macOS — Apple Silicon (M1 / M2 / M3 / M4)**
+
+```sh
+curl -fsSL https://github.com/TheAndruu/ai-clean/releases/latest/download/ai-clean_darwin_arm64.tar.gz | sudo tar -xz -C /usr/local/bin ai-clean
+```
+
+**macOS — Intel**
+
+```sh
+curl -fsSL https://github.com/TheAndruu/ai-clean/releases/latest/download/ai-clean_darwin_amd64.tar.gz | sudo tar -xz -C /usr/local/bin ai-clean
+```
+
+**Linux — x86_64**
+
+```sh
+curl -fsSL https://github.com/TheAndruu/ai-clean/releases/latest/download/ai-clean_linux_amd64.tar.gz | sudo tar -xz -C /usr/local/bin ai-clean
+```
+
+**Linux — arm64**
+
+```sh
+curl -fsSL https://github.com/TheAndruu/ai-clean/releases/latest/download/ai-clean_linux_arm64.tar.gz | sudo tar -xz -C /usr/local/bin ai-clean
+```
+
+Each command extracts only the `ai-clean` binary into `/usr/local/bin`. Verify with `ai-clean --version`.
+
+### Windows
+
+Run in PowerShell:
+
+```powershell
+$dest = "$env:LOCALAPPDATA\Programs\ai-clean"
+$tmp  = "$env:TEMP\ai-clean.zip"
+Invoke-WebRequest -Uri https://github.com/TheAndruu/ai-clean/releases/latest/download/ai-clean_windows_amd64.zip -OutFile $tmp
+New-Item -ItemType Directory -Force -Path $dest | Out-Null
+Expand-Archive -Force $tmp -DestinationPath $dest
+[Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path", "User") + ";$dest", "User")
+```
+
+Open a new PowerShell window for the updated `PATH` to take effect, then verify with `ai-clean --version`.
 
 ### From source
 
@@ -50,8 +91,6 @@ sudo dnf install xclip          # Fedora
 # Wayland: sudo apt install wl-clipboard
 ```
 
-macOS (`pbcopy`/`pbpaste`) and Windows (`clip.exe`) ship with the OS — no install needed.
-
 ## Usage
 
 ```
@@ -59,7 +98,7 @@ ai-clean              # read clipboard, clean, write back
 ai-clean --dry-run    # print cleaned text instead of writing back to clipboard
 ai-clean --stdin      # read stdin, write stdout (composable in pipelines)
 ai-clean --no-rejoin  # skip the wrapped-line rejoin (safer when pasting pure code)
-ai-clean --strip-ansi # also strip ANSI / OSC escape sequences (off by default)
+ai-clean --strip-ansi # also strip ANSI / OSC escape sequences
 ai-clean --version
 ```
 
