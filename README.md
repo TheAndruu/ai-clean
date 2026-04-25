@@ -29,9 +29,17 @@ Code-block indentation is preserved; prose is rejoined; borders and trailing whi
 
 ## Install
 
+### macOS / Linux — Homebrew (recommended)
+
+```sh
+brew install TheAndruu/tap/ai-clean
+```
+
+This skips the macOS Gatekeeper warning you get when downloading the unsigned binary directly through a browser.
+
 ### macOS / Linux — prebuilt binary
 
-Copy and paste the command for your platform. 
+Copy and paste the command for your platform.
 
 **macOS — Apple Silicon (M1 / M2 / M3 / M4)**
 

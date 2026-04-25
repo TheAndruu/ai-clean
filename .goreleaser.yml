@@ -50,3 +50,23 @@ changelog:
       - "^docs:"
       - "^test:"
       - "^chore:"
+
+brews:
+  - name: ai-clean
+    repository:
+      owner: TheAndruu
+      name: homebrew-tap
+      branch: main
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+    homepage: "https://github.com/TheAndruu/ai-clean"
+    description: "Clean clipboard text from AI CLI tools"
+    license: "MIT"
+    install: |
+      bin.install "ai-clean"
+    test: |
+      assert_match version.to_s, shell_output("#{bin}/ai-clean --version")
