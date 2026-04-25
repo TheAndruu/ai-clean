@@ -1,0 +1,5 @@
+/ai-clean
+/dist/
+*.test
+*.out
+.DS_Store

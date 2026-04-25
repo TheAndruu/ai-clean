@@ -1,0 +1,13 @@
+Claude's output usually doesn't have a left border, but it does pad every line out to the terminal width with trailing whitespace, and long paragraphs get hard-wrapped at the viewport edge which makes pasting into chat or markdown awkward to deal with later on.
+
+Code blocks remain indented though:
+
+    function add(a, b) {
+        return a + b;
+    }
+
+Lists stay intact:
+
+- first point
+- second point
+- third point

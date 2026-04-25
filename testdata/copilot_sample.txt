@@ -1,0 +1,10 @@
+  │ Here is a small example showing the structure that copilot's CLI │
+  │ produces. Each line has a left and right border character, plus  │
+  │ trailing whitespace padding so the right border lines up.        │
+  │                                                                  │
+  │ Code blocks keep their indentation:                              │
+  │                                                                  │
+  │     def greet(name):                                             │
+  │         return f"hello, {name}"                                  │
+  │                                                                  │
+  │ And prose continues afterwards.                                  │
