@@ -33,10 +33,15 @@ func stripLeadingChrome(lines []string) []string {
 	return lines
 }
 
+// dedentLeadingWhitespace strips a uniform leading-whitespace pad. Uses the
+// same ≥80% threshold as border detection so a single outlier line at column
+// 0 (common at the top of pasted summaries) can't block the dedent.
 func dedentLeadingWhitespace(lines []string) []string {
-	min := -1
-	for _, l := range lines {
+	counts := make([]int, len(lines))
+	considered := 0
+	for i, l := range lines {
 		if l == "" {
+			counts[i] = -1
 			continue
 		}
 		n := 0
@@ -48,40 +53,59 @@ func dedentLeadingWhitespace(lines []string) []string {
 			break
 		}
 		if n == len(l) {
-			// All-whitespace line: treat as blank so it doesn't anchor min to 0.
+			counts[i] = -1
 			continue
 		}
-		if min == -1 || n < min {
-			min = n
-		}
-		if min == 0 {
-			break
-		}
+		counts[i] = n
+		considered++
 	}
-	if min <= 0 {
+	if considered == 0 {
 		return lines
 	}
+
+	threshold := int(float64(considered)*borderThreshold + 0.5)
+	if threshold < 1 {
+		threshold = 1
+	}
+	cut := 0
+	for n := 1; ; n++ {
+		c := 0
+		for _, k := range counts {
+			if k >= n {
+				c++
+			}
+		}
+		if c < threshold {
+			break
+		}
+		cut = n
+	}
+	if cut == 0 {
+		return lines
+	}
+
 	out := make([]string, len(lines))
 	for i, l := range lines {
 		if l == "" {
 			out[i] = l
 			continue
 		}
-		// Defensively cap at len(l) for short all-whitespace lines.
-		cut := min
-		if cut > len(l) {
-			cut = len(l)
+		k := cut
+		if counts[i] >= 0 && counts[i] < k {
+			k = counts[i]
 		}
-		// Only cut if the leading chars are actually whitespace.
+		if k > len(l) {
+			k = len(l)
+		}
 		safe := true
-		for j := 0; j < cut; j++ {
+		for j := 0; j < k; j++ {
 			if l[j] != ' ' && l[j] != '\t' {
 				safe = false
 				break
 			}
 		}
 		if safe {
-			out[i] = l[cut:]
+			out[i] = l[k:]
 		} else {
 			out[i] = l
 		}

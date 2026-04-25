@@ -96,8 +96,9 @@ func canRejoin(prev, cur string, inFence bool, wrapBand int) bool {
 	if hasLeadingWS(prev) || hasLeadingWS(cur) {
 		return false
 	}
-	// Skip if either side is a list item or the cur is a heading.
-	if listMarker.MatchString(prev) || listMarker.MatchString(cur) {
+	// A new list item on cur is a sibling, not a continuation. prev being
+	// a list item is fine — wrapped continuations of list items are normal.
+	if listMarker.MatchString(cur) {
 		return false
 	}
 	if headingRE.MatchString(cur) {
@@ -120,11 +121,22 @@ func canRejoin(prev, cur string, inFence bool, wrapBand int) bool {
 	return true
 }
 
+// hasLeadingWS treats only structural indentation as a rejoin block: a tab,
+// or ≥4 leading spaces (markdown's indented-code-block boundary). Smaller
+// leading runs are typographic residue from imperfect dedent.
 func hasLeadingWS(l string) bool {
 	if l == "" {
 		return false
 	}
-	return l[0] == ' ' || l[0] == '\t'
+	if l[0] == '\t' {
+		return true
+	}
+	for i := 0; i < 4 && i < len(l); i++ {
+		if l[i] != ' ' {
+			return false
+		}
+	}
+	return len(l) >= 4 && l[0] == ' '
 }
 
 func endsSentence(l string) bool {

@@ -1,0 +1,10 @@
+The user wants a low-friction loop for adding real-world AI-CLI output as fixtures that are simultaneously (a) inspectable inputs for refining the cleanup rules and (b) regression tests pinning the desired output. Examples will accumulate over time.
+
+The infrastructure already exists. TestCleanFromTestdata at internal/clean/clean_test.go:167 auto-discovers any testdata/*_sample.txt file and pairs it with a sibling *_expected.txt. Adding a pair already requires zero code changes — but a few small adjustments will make the workflow scale and remove paper cuts:
+
+1. Dedicated folder. Move pairs into testdata/examples/ so this fixture kind is distinct from anything added later.
+2. Source-agnostic naming. The heuristics don't care what tool produced the output, so filenames should describe the characteristic being tested, not the source. (Confirmed with the user: rename existing claude_* / copilot_* pairs.)
+3. -update golden-file flag. Standard Go pattern: run the test with -update to (re)generate _expected.txt from current Clean() output. Without -update, missing-expected becomes a hard failure with a helpful hint, instead of a silent t.Skipf.
+4. Workflow docs. Add a short "Adding example test cases" section to CLAUDE.md so future sessions (and humans) know the loop.
+
+The rule files in internal/clean/*.go are not modified by this change — they're refined as a result of this workflow when a sample reveals a gap.
