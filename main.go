@@ -42,6 +42,11 @@ func main() {
 		NoRejoin:  *noRejoin,
 	}
 
+	if *stdinFlag && *dryRun {
+		fmt.Fprintln(os.Stderr, "ai-clean: --dry-run applies to clipboard mode only; cannot combine with --stdin")
+		os.Exit(2)
+	}
+
 	if *stdinFlag {
 		runStdin(opts)
 		return
@@ -91,9 +96,12 @@ func runClipboard(opts clean.Opts, dryRun bool) {
 		os.Exit(1)
 	}
 
-	lineCount := strings.Count(out, "\n") + 1
-	if out == "" {
-		lineCount = 0
+	lineCount := 0
+	if out != "" {
+		lineCount = strings.Count(out, "\n")
+		if !strings.HasSuffix(out, "\n") {
+			lineCount++
+		}
 	}
 	fmt.Printf("✓ cleaned %d line(s)\n", lineCount)
 }

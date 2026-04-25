@@ -155,6 +155,92 @@ func TestClean(t *testing.T) {
 			in:   "│ a\n│ b\n│ c\n│ d\nplain e",
 			want: "a\nb\nc\nd\nplain e",
 		},
+		// --- 1a: all border char variants ---
+		{
+			name: "heavy vertical border char stripped",
+			in:   "┃ first\n┃ second\n┃ third",
+			want: "first\nsecond\nthird",
+		},
+		{
+			name: "gt border char stripped",
+			in:   "> first\n> second\n> third",
+			want: "first\nsecond\nthird",
+		},
+		{
+			name: "light dashed vertical border char stripped",
+			in:   "┆ first\n┆ second\n┆ third",
+			want: "first\nsecond\nthird",
+		},
+		{
+			name: "light triple-dash vertical border char stripped",
+			in:   "╎ first\n╎ second\n╎ third",
+			want: "first\nsecond\nthird",
+		},
+		{
+			name: "light dotted vertical border char stripped",
+			in:   "┊ first\n┊ second\n┊ third",
+			want: "first\nsecond\nthird",
+		},
+		{
+			name: "heavy dotted vertical border char stripped",
+			in:   "┇ first\n┇ second\n┇ third",
+			want: "first\nsecond\nthird",
+		},
+		// --- 1b: rejoin list-marker variants ---
+		{
+			name: "star bullet list items not rejoined",
+			in:   "* this is a fairly long list item that approaches terminal width here\n* and here is another list item",
+			want: "* this is a fairly long list item that approaches terminal width here\n* and here is another list item",
+		},
+		{
+			name: "plus bullet list items not rejoined",
+			in:   "+ this is a fairly long list item that approaches terminal width here\n+ and here is another list item",
+			want: "+ this is a fairly long list item that approaches terminal width here\n+ and here is another list item",
+		},
+		{
+			name: "numbered list items not rejoined",
+			in:   "1. this is a fairly long list item that approaches terminal width here\n2. and here is another list item",
+			want: "1. this is a fairly long list item that approaches terminal width here\n2. and here is another list item",
+		},
+		{
+			name: "quote block lines not rejoined",
+			in:   "intro\n> first quoted line is fairly long and approaches terminal width here\n> second quoted line",
+			want: "intro\n> first quoted line is fairly long and approaches terminal width here\n> second quoted line",
+		},
+		// --- 1c: fenced code edge cases ---
+		{
+			name: "fenced code with language tag not rejoined inside",
+			in:   "intro line\n```go\nlong code line that almost reaches terminal width here\nshort\n```\noutro line",
+			want: "intro line\n```go\nlong code line that almost reaches terminal width here\nshort\n```\noutro line",
+		},
+		{
+			name: "tilde fence skips rejoin inside",
+			in:   "intro line\n~~~\nlong code line that almost reaches terminal width here\nshort\n~~~\noutro line",
+			want: "intro line\n~~~\nlong code line that almost reaches terminal width here\nshort\n~~~\noutro line",
+		},
+		{
+			name: "unclosed fence suppresses rejoin to end of document",
+			in:   "intro line\n```\nlong code line that almost reaches terminal width here\ncontinuation",
+			want: "intro line\n```\nlong code line that almost reaches terminal width here\ncontinuation",
+		},
+		// --- 1d: threshold boundary ---
+		{
+			name: "prefix at 75 percent below threshold not stripped",
+			in:   "│ a\n│ b\n│ c\nplain d",
+			want: "│ a\n│ b\n│ c\nplain d",
+		},
+		// --- 1e: tab-based indentation ---
+		{
+			name: "uniform leading tab whitespace dedented",
+			in:   "\thello\n\t\tcode\n\ttext",
+			want: "hello\n\tcode\ntext",
+		},
+		// --- 1f: CRLF normalization ---
+		{
+			name: "CRLF line endings normalized",
+			in:   "hello\r\nworld\r\n",
+			want: "hello\nworld\n",
+		},
 	}
 
 	for _, tc := range cases {
