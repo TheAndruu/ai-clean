@@ -241,6 +241,11 @@ func TestClean(t *testing.T) {
 			in:   "hello\r\nworld\r\n",
 			want: "hello\nworld\n",
 		},
+		{
+			name: "whitespace-only blank line does not block leading border detection",
+			in:   "│ a\n   \n│ b\n│ c",
+			want: "a\n\nb\nc",
+		},
 	}
 
 	for _, tc := range cases {

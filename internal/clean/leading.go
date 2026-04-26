@@ -116,7 +116,7 @@ func dedentLeadingWhitespace(lines []string) []string {
 func stripLeadingBorderChar(lines []string) []string {
 	nonEmpty := 0
 	for _, l := range lines {
-		if l != "" {
+		if strings.TrimSpace(l) != "" {
 			nonEmpty++
 		}
 	}
