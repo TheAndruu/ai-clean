@@ -1,0 +1,9 @@
+Here is a comparison of the two libraries:
+
+| Library    | Version | Stars | Notes                          |
+| ---------- | ------- | ----- | ------------------------------ |
+| fastlib    | 1.2.0   | 4.5k  | tiny API, very fast            |
+| heavyframe | 0.9.1   | 12.0k | full-featured, larger surface  |
+| middleone  | 2.0.0   | 8.2k  | balanced — good defaults       |
+
+Choose based on your project's needs.

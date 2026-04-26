@@ -36,6 +36,7 @@ archives:
     files:
       - README.md
       - LICENSE
+      - completions/*
 
 release:
   replace_existing_artifacts: true
@@ -71,5 +72,8 @@ brews:
     license: "MIT"
     install: |
       bin.install "ai-clean"
+      bash_completion.install "completions/ai-clean.bash" => "ai-clean"
+      zsh_completion.install "completions/ai-clean.zsh" => "_ai-clean"
+      fish_completion.install "completions/ai-clean.fish"
     test: |
       assert_match version.to_s, shell_output("#{bin}/ai-clean --version")

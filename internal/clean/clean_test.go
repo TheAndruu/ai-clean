@@ -285,13 +285,178 @@ func TestClean(t *testing.T) {
 			in:   "│ a\n   \n│ b\n│ c",
 			want: "a\n\nb\nc",
 		},
+		// --- 2a: markdown table guard (leading and trailing '|' preserved) ---
+		{
+			name: "markdown table left border preserved",
+			in:   "| col1 | col2 |\n| ---- | ---- |\n| a    | b    |\n| c    | d    |",
+			want: "| col1 | col2 |\n| ---- | ---- |\n| a    | b    |\n| c    | d    |",
+		},
+		{
+			name: "markdown table without trailing pipes preserved",
+			in:   "| col1 | col2\n| ---- | ----\n| a    | b\n| c    | d",
+			want: "| col1 | col2\n| ---- | ----\n| a    | b\n| c    | d",
+		},
+		// --- 2b: full-box borders (horizontal lines stripped, contents kept) ---
+		{
+			name: "full-box top and bottom horizontal rules removed",
+			in:   "┌─────┐\n│ hi  │\n└─────┘",
+			want: "hi",
+		},
+		{
+			name: "double-line horizontal rule removed",
+			in:   "═════════\nstuff goes here\n═════════",
+			want: "stuff goes here",
+		},
+		{
+			name: "ascii dashes treated as content not chrome",
+			in:   "alpha\n---\nbeta",
+			want: "alpha\n---\nbeta",
+		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := Clean(tc.in, tc.opts)
+			got, _ := Clean(tc.in, tc.opts)
 			if got != tc.want {
 				t.Errorf("Clean mismatch\n--- input ---\n%q\n--- want ---\n%q\n--- got ---\n%q", tc.in, tc.want, got)
+			}
+		})
+	}
+}
+
+func TestCleanStats(t *testing.T) {
+	type want struct {
+		leadingChar          rune
+		leadingLines         int
+		trailingChar         rune
+		trailingLines        int
+		boxBorderLinesRemove int
+		rejoinedLines        int
+		blankRunsCollapsed   int
+		dedentColumnsAtLeast int
+		leadingCapHit        bool
+		trailingCapHit       bool
+		unclosedFence        bool
+		markdownTableSkipped int
+	}
+
+	cases := []struct {
+		name string
+		in   string
+		opts Opts
+		want want
+	}{
+		{
+			name: "leading border counted",
+			in:   "│ a\n│ b\n│ c",
+			want: want{leadingChar: '│', leadingLines: 3},
+		},
+		{
+			name: "trailing border counted",
+			in:   "a   │\nb   │\nc   │",
+			want: want{trailingChar: '│', trailingLines: 3},
+		},
+		{
+			name: "box border lines counted",
+			in:   "┌─────┐\n│ hi  │\n└─────┘",
+			want: want{
+				boxBorderLinesRemove: 2,
+				leadingChar:          '│',
+				leadingLines:         1,
+				trailingChar:         '│',
+				trailingLines:        1,
+			},
+		},
+		{
+			name: "rejoin counter increments",
+			in: "this is a long line of prose that fills the terminal width\n" +
+				"continuation of that same sentence here.\n" +
+				"this is a long line of prose that fills the terminal width\n" +
+				"continuation of that same sentence here.",
+			want: want{rejoinedLines: 2},
+		},
+		{
+			name: "blank-run collapse counter",
+			in:   "a\n\n\n\n\nb\n\n\n\nc",
+			want: want{blankRunsCollapsed: 2},
+		},
+		{
+			name: "unclosed fence flagged",
+			in: "intro line that is fairly long and approaches terminal width here\n" +
+				"```\nlong code line that almost reaches the terminal width here too\ntail",
+			want: want{unclosedFence: true},
+		},
+		{
+			name: "markdown table skip flagged",
+			in:   "| col1 | col2 |\n| ---- | ---- |\n| a    | b    |\n| c    | d    |",
+			want: want{markdownTableSkipped: 2}, // both leading and trailing guard fire
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, got := Clean(tc.in, tc.opts)
+			if got.LeadingBorderChar != tc.want.leadingChar {
+				t.Errorf("LeadingBorderChar: got %q want %q", got.LeadingBorderChar, tc.want.leadingChar)
+			}
+			if got.LeadingBorderLines != tc.want.leadingLines {
+				t.Errorf("LeadingBorderLines: got %d want %d", got.LeadingBorderLines, tc.want.leadingLines)
+			}
+			if got.TrailingBorderChar != tc.want.trailingChar {
+				t.Errorf("TrailingBorderChar: got %q want %q", got.TrailingBorderChar, tc.want.trailingChar)
+			}
+			if got.TrailingBorderLines != tc.want.trailingLines {
+				t.Errorf("TrailingBorderLines: got %d want %d", got.TrailingBorderLines, tc.want.trailingLines)
+			}
+			if got.BoxBorderLinesRemoved != tc.want.boxBorderLinesRemove {
+				t.Errorf("BoxBorderLinesRemoved: got %d want %d", got.BoxBorderLinesRemoved, tc.want.boxBorderLinesRemove)
+			}
+			if got.RejoinedLines != tc.want.rejoinedLines {
+				t.Errorf("RejoinedLines: got %d want %d", got.RejoinedLines, tc.want.rejoinedLines)
+			}
+			if got.BlankRunsCollapsed != tc.want.blankRunsCollapsed {
+				t.Errorf("BlankRunsCollapsed: got %d want %d", got.BlankRunsCollapsed, tc.want.blankRunsCollapsed)
+			}
+			if tc.want.dedentColumnsAtLeast > 0 && got.DedentColumns < tc.want.dedentColumnsAtLeast {
+				t.Errorf("DedentColumns: got %d want at least %d", got.DedentColumns, tc.want.dedentColumnsAtLeast)
+			}
+			if got.LeadingCapHit != tc.want.leadingCapHit {
+				t.Errorf("LeadingCapHit: got %v want %v", got.LeadingCapHit, tc.want.leadingCapHit)
+			}
+			if got.TrailingCapHit != tc.want.trailingCapHit {
+				t.Errorf("TrailingCapHit: got %v want %v", got.TrailingCapHit, tc.want.trailingCapHit)
+			}
+			if got.UnclosedFence != tc.want.unclosedFence {
+				t.Errorf("UnclosedFence: got %v want %v", got.UnclosedFence, tc.want.unclosedFence)
+			}
+			if got.MarkdownTableSkipped != tc.want.markdownTableSkipped {
+				t.Errorf("MarkdownTableSkipped: got %d want %d", got.MarkdownTableSkipped, tc.want.markdownTableSkipped)
+			}
+		})
+	}
+}
+
+func TestCleanIdempotentOverTestdata(t *testing.T) {
+	dir := "../../testdata/examples"
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Skipf("testdata/examples dir not present: %v", err)
+		return
+	}
+	for _, e := range entries {
+		name := e.Name()
+		if !strings.HasSuffix(name, "_sample.txt") {
+			continue
+		}
+		t.Run(strings.TrimSuffix(name, "_sample.txt"), func(t *testing.T) {
+			in, err := os.ReadFile(filepath.Join(dir, name))
+			if err != nil {
+				t.Fatal(err)
+			}
+			first, _ := Clean(string(in), Opts{})
+			second, _ := Clean(first, Opts{})
+			if first != second {
+				t.Errorf("Clean is not idempotent on %s\n--- first ---\n%s\n--- second ---\n%s", name, first, second)
 			}
 		})
 	}
@@ -316,7 +481,7 @@ func TestCleanFromTestdata(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got := Clean(string(in), Opts{})
+			got, _ := Clean(string(in), Opts{})
 			want, err := os.ReadFile(expectedPath)
 			if err != nil {
 				if os.IsNotExist(err) && *update {

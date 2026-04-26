@@ -34,7 +34,7 @@ const rejoinMinDocWidth = 40
 // The terminal-width proxy avoids reflowing intentional short lines; the
 // residue alternative catches snippets pulled from a wider context where
 // A is just the tail of a wrapped line we don't have visibility into.
-func rejoinWrapped(lines []string) []string {
+func rejoinWrapped(lines []string, stats *Stats) []string {
 	if len(lines) < 2 {
 		return lines
 	}
@@ -73,6 +73,13 @@ func rejoinWrapped(lines []string) []string {
 		}
 
 		out[len(out)-1] = prev + " " + strings.TrimLeft(l, " \t")
+		if stats != nil {
+			stats.RejoinedLines++
+		}
+	}
+
+	if inFence && stats != nil {
+		stats.UnclosedFence = true
 	}
 
 	return out
@@ -86,6 +93,14 @@ var (
 func isFenceMarker(l string) bool {
 	t := strings.TrimSpace(l)
 	return strings.HasPrefix(t, "```") || strings.HasPrefix(t, "~~~")
+}
+
+func isTableRowLine(l string) bool {
+	t := strings.TrimSpace(l)
+	if !strings.HasPrefix(t, "|") {
+		return false
+	}
+	return strings.Count(t, "|") >= 2
 }
 
 func canRejoin(prev, cur string, inFence bool, wrapBand int) bool {
@@ -106,6 +121,12 @@ func canRejoin(prev, cur string, inFence bool, wrapBand int) bool {
 		return false
 	}
 	if headingRE.MatchString(cur) {
+		return false
+	}
+	// Markdown table rows are structural, not prose. Never reflow into
+	// or out of one. A "row" is a line whose trimmed form starts with '|'
+	// and has at least one more '|' (so a multi-cell row).
+	if isTableRowLine(prev) || isTableRowLine(cur) {
 		return false
 	}
 	// Don't rejoin if the previous line ends a sentence.

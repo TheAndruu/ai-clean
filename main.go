@@ -15,26 +15,36 @@ import (
 var version = "dev"
 
 func main() {
+	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
+}
+
+func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
+	fs := flag.NewFlagSet("ai-clean", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+
 	var (
-		stdinFlag   = flag.Bool("stdin", false, "read text from stdin and write cleaned text to stdout instead of using the clipboard")
-		dryRun      = flag.Bool("dry-run", false, "print the cleaned text to stdout instead of writing it back to the clipboard")
-		noRejoin    = flag.Bool("no-rejoin", false, "disable the wrapped-line rejoin heuristic (safer for pure code)")
-		stripANSI   = flag.Bool("strip-ansi", false, "also strip ANSI / OSC escape sequences (off by default)")
-		showVersion = flag.Bool("version", false, "print version and exit")
+		stdinFlag   = fs.Bool("stdin", false, "read text from stdin and write cleaned text to stdout instead of using the clipboard")
+		dryRun      = fs.Bool("dry-run", false, "print the cleaned text to stdout instead of writing it back to the clipboard")
+		noRejoin    = fs.Bool("no-rejoin", false, "disable the wrapped-line rejoin heuristic (safer for pure code)")
+		stripANSI   = fs.Bool("strip-ansi", false, "also strip ANSI / OSC escape sequences (off by default)")
+		explain     = fs.Bool("explain", false, "print a one-line-per-stage summary to stderr describing what changed")
+		showVersion = fs.Bool("version", false, "print version and exit")
 	)
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [flags]\n\n", os.Args[0])
-		fmt.Fprintln(os.Stderr, "Cleans AI-CLI terminal output on the clipboard: strips border")
-		fmt.Fprintln(os.Stderr, "characters, trailing whitespace, and rejoins terminal-wrapped lines.")
-		fmt.Fprintln(os.Stderr, "")
-		fmt.Fprintln(os.Stderr, "Flags:")
-		flag.PrintDefaults()
+	fs.Usage = func() {
+		fmt.Fprintf(stderr, "Usage: %s [flags]\n\n", "ai-clean")
+		fmt.Fprintln(stderr, "Cleans AI-CLI terminal output on the clipboard: strips border")
+		fmt.Fprintln(stderr, "characters, trailing whitespace, and rejoins terminal-wrapped lines.")
+		fmt.Fprintln(stderr, "")
+		fmt.Fprintln(stderr, "Flags:")
+		fs.PrintDefaults()
 	}
-	flag.Parse()
+	if err := fs.Parse(args); err != nil {
+		return 2
+	}
 
 	if *showVersion {
-		fmt.Println(version)
-		return
+		fmt.Fprintln(stdout, version)
+		return 0
 	}
 
 	opts := clean.Opts{
@@ -43,57 +53,63 @@ func main() {
 	}
 
 	if *stdinFlag && *dryRun {
-		fmt.Fprintln(os.Stderr, "ai-clean: --dry-run applies to clipboard mode only; cannot combine with --stdin")
-		os.Exit(2)
+		fmt.Fprintln(stderr, "ai-clean: --dry-run applies to clipboard mode only; cannot combine with --stdin")
+		return 2
 	}
 
 	if *stdinFlag {
-		runStdin(opts)
-		return
+		return runStdin(opts, *explain, stdin, stdout, stderr)
 	}
 
-	runClipboard(opts, *dryRun)
+	return runClipboard(opts, *dryRun, *explain, stdout, stderr)
 }
 
-func runStdin(opts clean.Opts) {
-	in, err := io.ReadAll(os.Stdin)
+func runStdin(opts clean.Opts, explain bool, stdin io.Reader, stdout, stderr io.Writer) int {
+	in, err := io.ReadAll(stdin)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ai-clean: read stdin: %v\n", err)
-		os.Exit(1)
+		fmt.Fprintf(stderr, "ai-clean: read stdin: %v\n", err)
+		return 1
 	}
-	out := clean.Clean(string(in), opts)
-	if _, err := os.Stdout.WriteString(out); err != nil {
-		fmt.Fprintf(os.Stderr, "ai-clean: write stdout: %v\n", err)
-		os.Exit(1)
+	out, stats := clean.Clean(string(in), opts)
+	if _, err := io.WriteString(stdout, out); err != nil {
+		fmt.Fprintf(stderr, "ai-clean: write stdout: %v\n", err)
+		return 1
 	}
+	if explain {
+		writeExplain(stderr, stats)
+	}
+	return 0
 }
 
-func runClipboard(opts clean.Opts, dryRun bool) {
+func runClipboard(opts clean.Opts, dryRun, explain bool, stdout, stderr io.Writer) int {
 	if clipboard.Unsupported {
-		fmt.Fprintln(os.Stderr, clipboardHelpMessage())
-		os.Exit(1)
+		fmt.Fprintln(stderr, clipboardHelpMessage())
+		return 1
 	}
 
 	in, err := clipboard.ReadAll()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ai-clean: read clipboard: %v\n", err)
+		fmt.Fprintf(stderr, "ai-clean: read clipboard: %v\n", err)
 		if isLinuxClipboardMissing(err) {
-			fmt.Fprintln(os.Stderr, "")
-			fmt.Fprintln(os.Stderr, clipboardHelpMessage())
+			fmt.Fprintln(stderr, "")
+			fmt.Fprintln(stderr, clipboardHelpMessage())
 		}
-		os.Exit(1)
+		return 1
 	}
 
-	out := clean.Clean(in, opts)
+	out, stats := clean.Clean(in, opts)
 
 	if dryRun {
-		fmt.Print(out)
-		return
+		fmt.Fprint(stdout, out)
+		if explain {
+			writeExplain(stderr, stats)
+		}
+		return 0
 	}
 
 	if err := clipboard.WriteAll(out); err != nil {
-		fmt.Fprintf(os.Stderr, "ai-clean: write clipboard: %v\n", err)
-		os.Exit(1)
+		fmt.Fprintf(stderr, "ai-clean: write clipboard: %v\n", err)
+		return 1
 	}
 
 	lineCount := 0
@@ -103,7 +119,61 @@ func runClipboard(opts clean.Opts, dryRun bool) {
 			lineCount++
 		}
 	}
-	fmt.Printf("✓ cleaned %d line(s)\n", lineCount)
+	fmt.Fprintf(stdout, "✓ cleaned %d line(s)\n", lineCount)
+	if explain {
+		writeExplain(stderr, stats)
+	}
+	return 0
+}
+
+func writeExplain(w io.Writer, s clean.Stats) {
+	var b strings.Builder
+	b.WriteString("ai-clean:\n")
+	wrote := false
+	if s.LeadingBorderLines > 0 {
+		fmt.Fprintf(&b, "  leading border %q stripped from %d line(s)\n", s.LeadingBorderChar, s.LeadingBorderLines)
+		wrote = true
+	}
+	if s.TrailingBorderLines > 0 {
+		fmt.Fprintf(&b, "  trailing border %q stripped from %d line(s)\n", s.TrailingBorderChar, s.TrailingBorderLines)
+		wrote = true
+	}
+	if s.DedentColumns > 0 {
+		fmt.Fprintf(&b, "  dedented %d column(s)\n", s.DedentColumns)
+		wrote = true
+	}
+	if s.BoxBorderLinesRemoved > 0 {
+		fmt.Fprintf(&b, "  removed %d box-border line(s)\n", s.BoxBorderLinesRemoved)
+		wrote = true
+	}
+	if s.RejoinedLines > 0 {
+		fmt.Fprintf(&b, "  rejoined %d wrapped line(s)\n", s.RejoinedLines)
+		wrote = true
+	}
+	if s.BlankRunsCollapsed > 0 {
+		fmt.Fprintf(&b, "  collapsed %d blank-line run(s)\n", s.BlankRunsCollapsed)
+		wrote = true
+	}
+	if s.LeadingCapHit {
+		b.WriteString("  ⚠ leading borders nested deeper than 3 layers — unusual input\n")
+		wrote = true
+	}
+	if s.TrailingCapHit {
+		b.WriteString("  ⚠ trailing borders nested deeper than 3 layers — unusual input\n")
+		wrote = true
+	}
+	if s.UnclosedFence {
+		b.WriteString("  ⚠ unclosed code fence detected; rejoin suppressed to EOF\n")
+		wrote = true
+	}
+	if s.MarkdownTableSkipped > 0 {
+		fmt.Fprintf(&b, "  ⚠ skipped %d markdown table guard(s) (left '|' borders intact)\n", s.MarkdownTableSkipped)
+		wrote = true
+	}
+	if !wrote {
+		b.WriteString("  no changes — input was already clean\n")
+	}
+	io.WriteString(w, b.String())
 }
 
 func isLinuxClipboardMissing(err error) bool {

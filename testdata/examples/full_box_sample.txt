@@ -1,0 +1,6 @@
+┌──────────────────────────────────────┐
+│ Status: All systems operational      │
+│ Region: us-east-1                    │
+│ Latency: 42ms (p50), 128ms (p99)     │
+│ Errors: 0                            │
+└──────────────────────────────────────┘

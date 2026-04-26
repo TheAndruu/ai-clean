@@ -14,21 +14,46 @@ var borderChars = []rune{'│', '┃', '|', '>', '┆', '╎', '┊', '┇', '�
 // frequently in normal text.
 const borderThreshold = 0.8
 
+// markdownTableThreshold: when the candidate border is '|', skip
+// stripping if at least this fraction of border-having lines also
+// carry an interior '|' — that pattern is a markdown table, not a
+// CLI border. Lower than borderThreshold because table separators
+// (`|---|---|`) and continuation rows can dilute the interior count.
+const markdownTableThreshold = 0.5
+
+// nestingWarnThreshold: number of dedent+border-strip passes beyond
+// which we record a "deep nesting" warning in Stats. Real-world chrome
+// rarely nests deeper than 2; >3 is unusual enough to flag.
+const nestingWarnThreshold = 3
+
+// pipelineSafetyCap: hard upper bound on loop iterations. Each pass
+// that changes anything strictly shrinks the document (it strips at
+// least one rune of border or whitespace), so convergence is guaranteed
+// in O(input size). This bound exists only to make a heuristic bug fail
+// loudly instead of looping forever.
+const pipelineSafetyCap = 100
+
 // stripLeadingChrome removes uniform leading whitespace and uniform
 // leading border characters in alternating passes until a full pass
-// produces no change. Capped at 3 iterations as a safety bound.
+// produces no change. If more than nestingWarnThreshold passes were
+// needed, stats.LeadingCapHit is set so --explain can surface it.
 //
 // Whitespace-dedent runs first within each pass: the minimum leading
 // whitespace count across non-empty lines is computed and stripped from
 // every non-empty line, preserving relative indentation of code blocks.
-func stripLeadingChrome(lines []string) []string {
-	for i := 0; i < 3; i++ {
+func stripLeadingChrome(lines []string, stats *Stats) []string {
+	passes := 0
+	for passes < pipelineSafetyCap {
 		before := joinForCompare(lines)
-		lines = dedentLeadingWhitespace(lines)
-		lines = stripLeadingBorderChar(lines)
+		lines = dedentLeadingWhitespace(lines, stats)
+		lines = stripLeadingBorderChar(lines, stats)
 		if joinForCompare(lines) == before {
 			break
 		}
+		passes++
+	}
+	if stats != nil && passes > nestingWarnThreshold {
+		stats.LeadingCapHit = true
 	}
 	return lines
 }
@@ -36,7 +61,7 @@ func stripLeadingChrome(lines []string) []string {
 // dedentLeadingWhitespace strips a uniform leading-whitespace pad. Uses the
 // same ≥80% threshold as border detection so a single outlier line at column
 // 0 (common at the top of pasted summaries) can't block the dedent.
-func dedentLeadingWhitespace(lines []string) []string {
+func dedentLeadingWhitespace(lines []string, stats *Stats) []string {
 	counts := make([]int, len(lines))
 	considered := 0
 	for i, l := range lines {
@@ -110,10 +135,13 @@ func dedentLeadingWhitespace(lines []string) []string {
 			out[i] = l
 		}
 	}
+	if stats != nil {
+		stats.DedentColumns += cut
+	}
 	return out
 }
 
-func stripLeadingBorderChar(lines []string) []string {
+func stripLeadingBorderChar(lines []string, stats *Stats) []string {
 	nonEmpty := 0
 	for _, l := range lines {
 		if strings.TrimSpace(l) != "" {
@@ -149,6 +177,13 @@ func stripLeadingBorderChar(lines []string) []string {
 		return lines
 	}
 
+	if best.ch == '|' && looksLikeMarkdownTable(lines) {
+		if stats != nil {
+			stats.MarkdownTableSkipped++
+		}
+		return lines
+	}
+
 	out := make([]string, len(lines))
 	for i, l := range lines {
 		if l == "" {
@@ -167,7 +202,43 @@ func stripLeadingBorderChar(lines []string) []string {
 		}
 		out[i] = string(rs)
 	}
+	if stats != nil {
+		if stats.LeadingBorderChar == 0 {
+			stats.LeadingBorderChar = best.ch
+		}
+		stats.LeadingBorderLines += best.count
+	}
 	return out
+}
+
+// looksLikeMarkdownTable returns true when the lines starting with '|'
+// also have at least one interior '|' on a sufficient fraction of those
+// rows — i.e. the leading '|' is a table column delimiter, not a border.
+func looksLikeMarkdownTable(lines []string) bool {
+	leading := 0
+	withInterior := 0
+	for _, l := range lines {
+		rs := []rune(strings.TrimRight(l, " \t"))
+		if len(rs) == 0 || rs[0] != '|' {
+			continue
+		}
+		leading++
+		// Drop the trailing '|' if present (cell-closing pipe of a table row).
+		end := len(rs)
+		if rs[end-1] == '|' {
+			end--
+		}
+		for j := 1; j < end; j++ {
+			if rs[j] == '|' {
+				withInterior++
+				break
+			}
+		}
+	}
+	if leading == 0 {
+		return false
+	}
+	return float64(withInterior)/float64(leading) >= markdownTableThreshold
 }
 
 func joinForCompare(lines []string) string {

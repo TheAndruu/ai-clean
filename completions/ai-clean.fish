@@ -1,0 +1,7 @@
+complete -c ai-clean -l stdin       -d "read text from stdin and write cleaned text to stdout"
+complete -c ai-clean -l dry-run     -d "print cleaned text to stdout instead of writing clipboard"
+complete -c ai-clean -l no-rejoin   -d "disable wrapped-line rejoin heuristic"
+complete -c ai-clean -l strip-ansi  -d "also strip ANSI / OSC escape sequences"
+complete -c ai-clean -l explain     -d "print stage-by-stage summary to stderr"
+complete -c ai-clean -l version     -d "print version and exit"
+complete -c ai-clean -l help        -d "show help"
