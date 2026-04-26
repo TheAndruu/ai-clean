@@ -34,7 +34,7 @@ Code-block indentation is preserved; prose is rejoined; borders and trailing whi
 ```sh
 brew install TheAndruu/tap/ai-clean
 ```
-Also works on Linux if you have Homebrew installed.
+Also works on Linux if you have Homebrew installed. Installs shell completions for bash, zsh, and fish automatically.
 
 To upgrade later:
 
@@ -111,6 +111,7 @@ ai-clean --dry-run    # print cleaned text instead of writing back to clipboard
 ai-clean --stdin      # read stdin, write stdout (composable in pipelines)
 ai-clean --no-rejoin  # skip the wrapped-line rejoin (safer when pasting pure code)
 ai-clean --strip-ansi # also strip ANSI / OSC escape sequences
+ai-clean --explain    # print a per-stage summary to stderr (what was stripped and why)
 ai-clean --version
 ```
 
@@ -125,17 +126,36 @@ cat session.log | ai-clean --stdin > clean.txt
 
 # Verify what would happen without modifying the clipboard.
 ai-clean --dry-run
+
+# See exactly what the cleanup did (useful for debugging unexpected output).
+ai-clean --explain
 ```
+
+`--explain` writes a short summary to stderr after the cleaned text — for example:
+
+```
+ai-clean:
+  leading border '│' stripped from 23 line(s)
+  trailing border '│' stripped from 22 line(s)
+  removed 2 box-border line(s)
+  rejoined 8 wrapped line(s)
+  ⚠ skipped 1 markdown table guard(s) (left '|' borders intact)
+```
+
+Lines for stages that did nothing are suppressed; warnings (`⚠`) only appear when the relevant condition was hit.
 
 ## How it works
 
 The cleanup runs in a fixed order, designed to be safe across plain prose, plain code, and mixed content:
 
 1. **Optional ANSI / OSC strip** (only with `--strip-ansi`). Off by default because terminals usually strip these on copy already.
-2. **Strip leading chrome.** Computes the minimum leading-whitespace count across non-empty lines and dedents — preserving relative indentation of code blocks. Then detects a uniform border character (`│`, `|`, `>`, etc.) appearing on ≥80% of non-empty lines and strips it. Loops until stable, so nested borders (`│ │ text`) peel cleanly.
-3. **Strip trailing chrome.** Mirror of step 2 for the right side: detects a uniform trailing border character (looking past trailing whitespace), strips it, then trims trailing whitespace per line. Looped for nested borders.
-4. **Rejoin wrapped lines.** Conservative heuristic that merges adjacent prose lines only when all of the following hold: the previous line doesn't end in sentence-terminating punctuation, the next doesn't start with a capital / list marker / heading marker, neither side has leading whitespace, and the document's longest line is at least 40 chars (a proxy for terminal-wrapped output). Skipped entirely inside fenced code blocks. Use `--no-rejoin` to disable.
-5. **Cosmetic blank-line collapse.** Runs of 3+ consecutive blank lines collapse to 2.
+2. **Strip full-box borders.** Removes lines that are pure box-drawing chrome (top/bottom horizontal rules with corners, like `┌─────┐` and `└─────┘`, or double-line rules like `═══════`). Markdown ASCII rules (`---`, `***`, `===`) are treated as content and left alone.
+3. **Strip leading chrome.** Computes the minimum leading-whitespace count across non-empty lines and dedents — preserving relative indentation of code blocks. Then detects a uniform border character (`│`, `|`, `>`, etc.) appearing on ≥80% of non-empty lines and strips it. **Markdown tables are preserved**: if the candidate border is `|` and the rows look like a table (interior `|` characters present), the strip is skipped.
+4. **Strip trailing chrome.** Mirror of step 3 for the right side: detects a uniform trailing border character (looking past trailing whitespace), strips it, then trims trailing whitespace per line. Same markdown-table guard.
+5. **Rejoin wrapped lines.** Conservative heuristic that merges adjacent prose lines only when all of the following hold: the previous line doesn't end in sentence-terminating punctuation, the next doesn't start with a capital / list marker / heading marker, neither side is a markdown table row, neither side has leading whitespace, and the document's longest line is at least 40 chars (a proxy for terminal-wrapped output). Skipped entirely inside fenced code blocks. Use `--no-rejoin` to disable.
+6. **Cosmetic blank-line collapse.** Runs of 3+ consecutive blank lines collapse to 2.
+
+Steps 2–5 run inside a fix-point loop — each stage can produce input the others would clean further (a trailing-strip can turn a previously-mixed line into pure box chrome; rejoin can expose leading whitespace from the merged tail). The loop terminates as soon as a full pass makes no change, which is guaranteed because every changing pass strictly shrinks the document.
 
 ## License
 
