@@ -11,6 +11,8 @@ Clean up output you copied from AI CLI tools (Claude Code, GitHub Copilot CLI, a
 
 Workflow: **select → copy → `ai-clean` → paste**.
 
+**[Try it in your browser →](https://ai-clean.dev)** — paste messy text and see it cleaned, no install required. The page runs the same Go cleanup pipeline as the CLI, compiled to WebAssembly; nothing is uploaded.
+
 ## What it fixes
 
 Before (copied straight from a bordered CLI):
