@@ -11,12 +11,22 @@ Set Theme "Dracula"
 Set Padding 20
 Set TypingSpeed 35ms
 
-# Show the messy input as it arrived on the clipboard.
+# Show the raw messy text — this is what you'd see and want to copy.
 Type "cat demo/messy.txt"
 Enter
 Sleep 2s
 
-# Run ai-clean on it via stdin so the cleaned output is visible inline.
-Type "cat demo/messy.txt | ai-clean --stdin"
+# Copy it to the clipboard (simulates selecting the text and hitting Cmd+C).
+Type "cat demo/messy.txt | pbcopy"
 Enter
-Sleep 4s
+Sleep 1s
+
+# Run ai-clean — reads clipboard, strips chrome, writes cleaned text back.
+Type "ai-clean"
+Enter
+Sleep 2s
+
+# Paste to reveal the cleaned output.
+Type "pbpaste"
+Enter
+Sleep 3s
