@@ -1,0 +1,2 @@
+correctly used
+  strings.TrimSpace(l) != "". A whitespace-only blank row

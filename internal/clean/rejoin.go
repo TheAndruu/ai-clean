@@ -27,9 +27,13 @@ const rejoinMinDocWidth = 40
 // only if all hold:
 //   - A does not end with sentence-terminating punctuation (. ! ? : ;)
 //   - B does not start with a capital letter, list marker, or heading marker (#)
-//   - A is "near terminal width" (within 10 chars of the doc's max line length)
+//   - A is "near terminal width" (within 10 chars of the doc's max line
+//     length), OR B carries 1–3 leading spaces of typographic residue
+//     (a continuation signal left over from imperfect dedent upstream).
 //
-// The terminal-width proxy avoids reflowing intentional short lines.
+// The terminal-width proxy avoids reflowing intentional short lines; the
+// residue alternative catches snippets pulled from a wider context where
+// A is just the tail of a wrapped line we don't have visibility into.
 func rejoinWrapped(lines []string) []string {
 	if len(lines) < 2 {
 		return lines
@@ -114,8 +118,9 @@ func canRejoin(prev, cur string, inFence bool, wrapBand int) bool {
 	if first != 0 && unicode.IsUpper(first) {
 		return false
 	}
-	// Only rejoin when prev was likely terminal-wrapped.
-	if utf8.RuneCountInString(prev) < wrapBand {
+	// Two independent wrap signals: prev near terminal width, or cur with
+	// 1–3 leading spaces of typographic residue. Either is enough.
+	if !hasResidueLeadingWS(cur) && utf8.RuneCountInString(prev) < wrapBand {
 		return false
 	}
 	return true
@@ -137,6 +142,19 @@ func hasLeadingWS(l string) bool {
 		}
 	}
 	return len(l) >= 4 && l[0] == ' '
+}
+
+// hasResidueLeadingWS: 1–3 leading spaces. Distinct from hasLeadingWS,
+// which guards on tabs / 4+ spaces (markdown indented-code boundary).
+func hasResidueLeadingWS(l string) bool {
+	if l == "" || l[0] != ' ' {
+		return false
+	}
+	n := 0
+	for n < len(l) && l[n] == ' ' {
+		n++
+	}
+	return n >= 1 && n <= 3
 }
 
 func endsSentence(l string) bool {
