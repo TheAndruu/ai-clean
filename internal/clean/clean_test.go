@@ -186,6 +186,16 @@ func TestClean(t *testing.T) {
 			in:   "┇ first\n┇ second\n┇ third",
 			want: "first\nsecond\nthird",
 		},
+		{
+			name: "heavy quad-dash vertical border char stripped",
+			in:   "╏ first\n╏ second\n╏ third",
+			want: "first\nsecond\nthird",
+		},
+		{
+			name: "left half block border char stripped",
+			in:   "▌ first\n▌ second\n▌ third",
+			want: "first\nsecond\nthird",
+		},
 		// --- 1b: rejoin list-marker variants ---
 		{
 			name: "star bullet list items not rejoined",
@@ -206,6 +216,35 @@ func TestClean(t *testing.T) {
 			name: "quote block lines not rejoined",
 			in:   "intro\n> first quoted line is fairly long and approaches terminal width here\n> second quoted line",
 			want: "intro\n> first quoted line is fairly long and approaches terminal width here\n> second quoted line",
+		},
+		// --- 1b1: Unicode bullet / symbol-prefixed continuations ---
+		{
+			name: "unicode bullet continuation not rejoined",
+			in: "this is a long line of prose that fills the terminal width\n" +
+				"⏺ Read foo.txt",
+			want: "this is a long line of prose that fills the terminal width\n" +
+				"⏺ Read foo.txt",
+		},
+		{
+			name: "emoji checkmark continuation not rejoined",
+			in: "this is a long line of prose that fills the terminal width\n" +
+				"✅ Tests passed",
+			want: "this is a long line of prose that fills the terminal width\n" +
+				"✅ Tests passed",
+		},
+		{
+			name: "emoji pushpin continuation not rejoined",
+			in: "this is a long line of prose that fills the terminal width\n" +
+				"📌 Important note here",
+			want: "this is a long line of prose that fills the terminal width\n" +
+				"📌 Important note here",
+		},
+		{
+			name: "non-list pictograph continuation guarded by So",
+			in: "this is a long line of prose that fills the terminal width\n" +
+				"★ a starred item",
+			want: "this is a long line of prose that fills the terminal width\n" +
+				"★ a starred item",
 		},
 		// --- 1c: fenced code edge cases ---
 		{

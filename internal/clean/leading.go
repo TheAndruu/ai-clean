@@ -5,7 +5,7 @@ import "strings"
 // borderChars are the candidate left/right border characters used by
 // CLIs to draw boxed output. Order doesn't matter; each is checked
 // independently against the threshold.
-var borderChars = []rune{'│', '┃', '|', '>', '┆', '╎', '┊', '┇'}
+var borderChars = []rune{'│', '┃', '|', '>', '┆', '╎', '┊', '┇', '╏', '▌'}
 
 // borderThreshold: a candidate is accepted as a uniform border when
 // it appears at the relevant position on at least this fraction of

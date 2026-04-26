@@ -1,0 +1,9 @@
+I'll explore the codebase to understand the request handling flow before
+making changes. The plan is multi-step and I will use parallel reads to
+inspect the relevant files in parallel using the read tool below in turn
+⏺ Read(internal/parser/state.go)
+⏺ Read(internal/server/main.go)
+The main loop accepts a socket and threads each connection through the
+parser streaming state machine before yielding tokens to a downstream
+consumer that writes responses back to the connected client below here
+✅ Initial read complete. Ready to proceed with the changes.

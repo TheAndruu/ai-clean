@@ -79,7 +79,7 @@ func rejoinWrapped(lines []string) []string {
 }
 
 var (
-	listMarker = regexp.MustCompile(`^\s*([-*+]|\d+\.|>)\s`)
+	listMarker = regexp.MustCompile(`^\s*([-*+•●⏺▶▪◦►]|\d+\.|>)\s`)
 	headingRE  = regexp.MustCompile(`^#{1,6}\s`)
 )
 
@@ -116,6 +116,13 @@ func canRejoin(prev, cur string, inFence bool, wrapBand int) bool {
 	// a new sentence/heading even without an explicit period above.
 	first := firstNonSpaceRune(cur)
 	if first != 0 && unicode.IsUpper(first) {
+		return false
+	}
+	// Pictographic / dingbat / misc-symbol prefixes (✅ 📌 ⭐ ★ etc.) are
+	// status or callout markers in AI-CLI output, not prose continuations.
+	// Narrow to category So so prose-legitimate Sm/Sc glyphs (+ - = $) don't
+	// trip the guard.
+	if first != 0 && unicode.In(first, unicode.So) {
 		return false
 	}
 	// Two independent wrap signals: prev near terminal width, or cur with
