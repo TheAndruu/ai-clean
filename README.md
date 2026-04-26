@@ -1,5 +1,12 @@
 # AI Clean
 
+[![Release](https://img.shields.io/github/v/release/TheAndruu/ai-clean)](https://github.com/TheAndruu/ai-clean/releases/latest)
+[![Build](https://github.com/TheAndruu/ai-clean/actions/workflows/test.yml/badge.svg)](https://github.com/TheAndruu/ai-clean/actions/workflows/test.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/TheAndruu/ai-clean.svg)](https://pkg.go.dev/github.com/TheAndruu/ai-clean)
+[![Go Report Card](https://goreportcard.com/badge/github.com/TheAndruu/ai-clean)](https://goreportcard.com/report/github.com/TheAndruu/ai-clean)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![demo](demo/demo.gif)
+
 Clean up output you copied from AI CLI tools (Claude Code, GitHub Copilot CLI, and similar) so it pastes into chat, GitHub issues, docs, or another terminal without the usual mess: trailing whitespace padding, terminal-wrapped lines, and left/right border characters like `│` or `|`.
 
 Workflow: **select → copy → `ai-clean` → paste**.
