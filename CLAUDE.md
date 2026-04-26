@@ -70,11 +70,11 @@ Without `-update`, a missing or mismatched expected file fails the test — inte
 
 ## Releases
 
-Distribution is via GoReleaser (`.goreleaser.yml`) and a GitHub Actions workflow (`.github/workflows/release.yml`) triggered on `v*` tags. To cut a release: `git tag v0.X.0 && git push --tags`. CI builds and uploads binaries for darwin/linux/windows × amd64/arm64 (windows/arm64 is skipped) and pushes an updated formula to the `TheAndruu/homebrew-tap` repo (`master` branch, `Formula/` directory) so `brew install TheAndruu/tap/ai-clean` picks up the new version. The Homebrew push needs the `HOMEBREW_TAP_GITHUB_TOKEN` secret; binary uploads use the default `GITHUB_TOKEN`. `release.replace_existing_artifacts: true` lets a tag be re-released without manual cleanup.
+Distribution is via GoReleaser (`.goreleaser.yml`) and a GitHub Actions workflow (`.github/workflows/release.yml`) triggered on `v*` tags. To cut a release: `git tag v0.X.0 && git push --tags`. CI builds and uploads binaries for darwin/linux/windows × amd64/arm64 (windows/arm64 is skipped) and pushes an updated cask to the `TheAndruu/homebrew-tap` repo (`master` branch, `Casks/` directory) so `brew install TheAndruu/tap/ai-clean` picks up the new version. The Homebrew push needs the `HOMEBREW_TAP_GITHUB_TOKEN` secret; binary uploads use the default `GITHUB_TOKEN`. `release.replace_existing_artifacts: true` lets a tag be re-released without manual cleanup.
 
-Shell completions (`completions/ai-clean.{bash,zsh,fish}`) ship inside every release archive and the Homebrew formula installs them into the right Cellar paths. The `curl` and PowerShell install paths in the README don't surface them — only Homebrew users get tab-completion automatically.
+Shell completions (`completions/ai-clean.{bash,zsh,fish}`) ship inside every release archive and the cask's `completions:` block installs them. The `curl` and PowerShell install paths in the README don't surface them — only Homebrew users get tab-completion automatically.
 
-Recommended install path on macOS is the Homebrew tap (avoids the Gatekeeper warning on the unsigned binary). The README still documents `curl`/PowerShell one-liners and `go install` as alternatives.
+Recommended install path on macOS is the Homebrew tap. The cask's `hooks.post.install` block clears the `com.apple.quarantine` xattr from the installed binary — that's what avoids the Gatekeeper warning on the unsigned binary; without it, cask-installed binaries would still be quarantined. The README documents `curl`/PowerShell one-liners and `go install` as alternatives. Casks are macOS-only, so Linuxbrew is no longer a supported install path — Linux users go through the `curl` one-liner.
 
 ## Where things live
 
@@ -91,6 +91,6 @@ Recommended install path on macOS is the Homebrew tap (avoids the Gatekeeper war
 | `internal/clean/clean_test.go` | Table-driven behavior tests, `TestCleanStats` for the stats fields, `TestCleanIdempotentOverTestdata`, testdata-driven full-pipeline tests |
 | `internal/clean/fuzz_test.go` | `FuzzClean` — idempotency property test |
 | `internal/clean/bench_test.go` | `BenchmarkClean` — per-fixture throughput baseline |
-| `completions/ai-clean.{bash,zsh,fish}` | Static shell-completion scripts, shipped in release archives and installed by the Homebrew formula |
+| `completions/ai-clean.{bash,zsh,fish}` | Static shell-completion scripts, shipped in release archives and installed by the Homebrew cask |
 | `testdata/examples/*_sample.txt` | Real captured input for full-pipeline regression cases |
 | `testdata/examples/*_expected.txt` | Expected output for the matching sample (regenerable via `go test -update`) |

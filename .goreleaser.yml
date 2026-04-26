@@ -55,25 +55,28 @@ changelog:
       - "^test:"
       - "^chore:"
 
-brews:
+homebrew_casks:
   - name: ai-clean
     repository:
       owner: TheAndruu
       name: homebrew-tap
       branch: master
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
-    directory: Formula
     commit_author:
       name: goreleaserbot
       email: bot@goreleaser.com
-    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+    commit_msg_template: "Brew cask update for {{ .ProjectName }} version {{ .Tag }}"
     homepage: "https://github.com/TheAndruu/ai-clean"
     description: "Clean clipboard text from AI CLI tools"
-    license: "MIT"
-    install: |
-      bin.install "ai-clean"
-      bash_completion.install "completions/ai-clean.bash" => "ai-clean"
-      zsh_completion.install "completions/ai-clean.zsh" => "_ai-clean"
-      fish_completion.install "completions/ai-clean.fish"
-    test: |
-      assert_match version.to_s, shell_output("#{bin}/ai-clean --version")
+    binaries:
+      - ai-clean
+    completions:
+      bash: completions/ai-clean.bash
+      zsh: completions/ai-clean.zsh
+      fish: completions/ai-clean.fish
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/ai-clean"]
+          end

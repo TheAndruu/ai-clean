@@ -41,7 +41,7 @@ Code-block indentation is preserved; prose is rejoined; borders and trailing whi
 ```sh
 brew install TheAndruu/tap/ai-clean
 ```
-Also works on Linux if you have Homebrew installed. Installs shell completions for bash, zsh, and fish automatically.
+Installs shell completions for bash, zsh, and fish automatically. Linux users: use the one-line installer below — Homebrew casks are macOS-only.
 
 To upgrade later:
 
