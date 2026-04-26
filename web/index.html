@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ai-clean — clean terminal chrome from text copied out of AI CLIs</title>
+<meta name="description" content="Paste text from Claude Code, Copilot CLI, or any other AI CLI and see it cleaned in the browser. No install, no upload — runs entirely client-side via WebAssembly.">
+<meta property="og:title" content="ai-clean — clean AI CLI output in the browser">
+<meta property="og:description" content="Strip terminal borders, padding, and wrapped lines from text copied out of AI CLI tools.">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>ai-clean</h1>
+  <p class="tagline">Strip terminal chrome from text copied out of AI CLIs (Claude Code, Copilot CLI, Cursor, Gemini CLI). Runs entirely in your browser — nothing is uploaded.</p>
+  <nav>
+    <a href="https://github.com/TheAndruu/ai-clean">GitHub</a>
+    <span class="sep">·</span>
+    <a href="https://github.com/TheAndruu/ai-clean#install">Install the CLI</a>
+  </nav>
+</header>
+
+<main>
+  <div class="controls">
+    <label><input type="checkbox" id="opt-no-rejoin"> <code>--no-rejoin</code> <span class="hint">don't merge wrapped lines</span></label>
+    <label><input type="checkbox" id="opt-strip-ansi"> <code>--strip-ansi</code> <span class="hint">also remove ANSI escapes</span></label>
+    <button type="button" id="load-example">Load example</button>
+  </div>
+
+  <div class="panes">
+    <section class="pane">
+      <header><span>Paste messy text here</span></header>
+      <textarea id="input" spellcheck="false" placeholder="Paste output you copied from a terminal AI CLI…"></textarea>
+    </section>
+
+    <section class="pane">
+      <header><span>Cleaned output</span><button type="button" id="copy" disabled>Copy</button></header>
+      <textarea id="output" spellcheck="false" readonly placeholder="Cleaned text appears here…"></textarea>
+    </section>
+  </div>
+
+  <pre id="stats" class="stats" aria-live="polite"></pre>
+</main>
+
+<footer>
+  <p>Built with the same <code>internal/clean</code> Go package as the CLI, compiled to WebAssembly. <a href="https://github.com/TheAndruu/ai-clean#how-it-works">How it works</a>.</p>
+</footer>
+
+<script src="wasm_exec.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

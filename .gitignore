@@ -3,3 +3,8 @@
 *.test
 *.out
 .DS_Store
+
+# WASM build artifacts (built in CI for Pages deploy; can be built locally with the
+# command in cmd/wasm/main.go's package doc, but never committed).
+/web/ai-clean.wasm
+/web/wasm_exec.js
