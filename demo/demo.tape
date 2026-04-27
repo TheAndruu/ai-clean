@@ -6,7 +6,7 @@ Output demo/demo.gif
 
 Set FontSize 14
 Set Width 1100
-Set Height 620
+Set Height 460
 Set Theme "Dracula"
 Set Padding 20
 Set TypingSpeed 35ms
@@ -29,4 +29,4 @@ Sleep 2s
 # Paste to reveal the cleaned output.
 Type "pbpaste"
 Enter
-Sleep 3s
+Sleep 4s
