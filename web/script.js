@@ -7,6 +7,56 @@
   const optNoRejoin = document.getElementById("opt-no-rejoin");
   const optStripAnsi = document.getElementById("opt-strip-ansi");
 
+  // ---------- Install tab switcher ----------
+  const tabs = document.querySelectorAll(".terminal-tabs .tab");
+  const panes = document.querySelectorAll(".terminal-pane");
+  const copyCmdBtn = document.querySelector(".copy-cmd");
+
+  const activatePane = (name) => {
+    tabs.forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+    panes.forEach(p => p.classList.toggle("active", p.dataset.pane === name));
+  };
+  tabs.forEach(t => t.addEventListener("click", () => activatePane(t.dataset.tab)));
+
+  if (copyCmdBtn) {
+    copyCmdBtn.addEventListener("click", async () => {
+      const activePane = document.querySelector(".terminal-pane.active");
+      if (!activePane) return;
+      const cmdEl = activePane.querySelector(".cmd");
+      const cmdText = cmdEl ? cmdEl.textContent : activePane.textContent;
+      try {
+        await navigator.clipboard.writeText(cmdText.trim());
+        const label = copyCmdBtn.querySelector("span");
+        const original = label.textContent;
+        copyCmdBtn.classList.add("copied");
+        label.textContent = "Copied";
+        setTimeout(() => {
+          copyCmdBtn.classList.remove("copied");
+          label.textContent = original;
+        }, 1400);
+      } catch (err) {
+        console.error("copy failed", err);
+      }
+    });
+  }
+
+  // ---------- Cycling CLI names in hero ----------
+  const cliCursor = document.querySelector(".cli-cursor");
+  if (cliCursor) {
+    const names = ["AI CLI", "Claude Code", "Copilot CLI", "Cursor", "Gemini CLI"];
+    let idx = 0;
+    setInterval(() => {
+      idx = (idx + 1) % names.length;
+      cliCursor.style.opacity = "0";
+      setTimeout(() => {
+        cliCursor.textContent = names[idx];
+        cliCursor.style.opacity = "1";
+      }, 220);
+    }, 2400);
+    cliCursor.style.transition = "opacity .22s";
+  }
+
+  // ---------- WASM demo ----------
   const example = `  │ Here is a small example showing the structure that copilot's CLI │
   │ produces. Each line has left & right border characters, plus  │
   │ trailing whitespace padding so the right border lines up.        │
@@ -21,7 +71,6 @@
   const setStatus = (msg) => { statsEl.textContent = msg; };
   setStatus("Loading WebAssembly module…");
 
-  // Bootstrap the Go runtime.
   const go = new Go();
   let result;
   try {
@@ -70,7 +119,6 @@
     return lines.length ? "ai-clean:\n  " + lines.join("\n  ") : "no changes";
   };
 
-  // Debounce the input so we don't hammer WASM on every keystroke.
   let pending = 0;
   const schedule = () => {
     clearTimeout(pending);
